@@ -30,7 +30,7 @@ class Qwen2VLAudioConfig(PretrainedConfig):
     def __init__(
         self,
         encoder_model="openai/whisper-large-v3-turbo",
-        project_dim:  int = 4096,
+        project_dim:  int = 3584,
         load_pretrained_audio: bool = False,
         **kwargs,
     ):
