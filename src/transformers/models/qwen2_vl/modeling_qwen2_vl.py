@@ -57,22 +57,32 @@ logger = logging.get_logger(__name__)
 
 
 from transformers import WhisperConfig, WhisperModel
+from transformers.models.whisper.modeling_whisper import WhisperEncoder
 
 class AudioEncoder(nn.Module):
-    def __init__(self, llm_hidden_size: int):
+    def __init__(self, encoder_model:str,  project_dim: int):
         super().__init__()
-        cfg           = WhisperConfig.from_pretrained("openai/whisper-large-v3-turbo")
-        self.model    = WhisperModel(cfg)          # ← random weights
-        self.encoder  = self.model.encoder
-        self.hid_dim  = cfg.d_model               # 1280
-        self.stride   = cfg.conv_stride[-1]       # 2
-        self.proj     = nn.Linear(self.hid_dim, llm_hidden_size)
+        wcfg          = WhisperConfig.from_pretrained(encoder_model)
+        self.encoder  = WhisperModel(wcfg).encoder 
+        self.hid_dim  = wcfg.d_model       # 1280
+        self.stride   = wcfg.d_model       # 2
+        self.proj     = nn.Linear(self.hid_dim, project_dim)
 
     def forward(self, mel):
         x = self.encoder(input_features=mel).last_hidden_state
         x = self.proj(x)
         return x
 
+    @classmethod
+    def _from_config(cls, audio_cfg):
+        """
+        `audio_cfg` is the Qwen2VLAudioConfig instance.
+        """
+        return cls(
+            encoder_model=audio_cfg.encoder_model,
+            project_dim=audio_cfg.project_dim,
+        )
+    
 @dataclass
 class Qwen2VLModelOutputWithPast(ModelOutput):
     """

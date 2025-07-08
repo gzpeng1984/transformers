@@ -23,7 +23,7 @@ logger = logging.get_logger(__name__)
 from transformers import WhisperModel, WhisperConfig
 
 
-class Qwen2VLAudioConfig(WhisperConfig):
+class Qwen2VLAudioConfig(PretrainedConfig):
     model_type = "qwen2_vl"
     base_config_key = "audio_config"
 
@@ -35,21 +35,12 @@ class Qwen2VLAudioConfig(WhisperConfig):
         **kwargs,
     ):
         super().__init__(**kwargs)
+        
         self.encoder_model          = encoder_model
         self.project_dim            = project_dim
         self.load_pretrained_audio  = load_pretrained_audio
 
-    def to_dict(self):
-        data = super().to_dict()
-        data.update(
-            {
-                "encoder_model":         self.encoder_model,
-                "project_dim":           self.project_dim,
-                "load_pretrained_audio": self.load_pretrained_audio,
-            }
-        )
-        return data
-    
+
 
 class Qwen2VLVisionConfig(PretrainedConfig):
     model_type = "qwen2_vl"
