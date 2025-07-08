@@ -18,9 +18,38 @@ from ...configuration_utils import PretrainedConfig, layer_type_validation
 from ...modeling_rope_utils import rope_config_validation
 from ...utils import logging
 
-
 logger = logging.get_logger(__name__)
 
+from transformers import WhisperModel, WhisperConfig
+
+
+class Qwen2VLAudioConfig(WhisperConfig):
+    model_type = "qwen2_vl"
+    base_config_key = "audio_config"
+
+    def __init__(
+        self,
+        encoder_model="openai/whisper-large-v3-turbo",
+        project_dim:  int = 4096,
+        load_pretrained_audio: bool = False,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+        self.encoder_model          = encoder_model
+        self.project_dim            = project_dim
+        self.load_pretrained_audio  = load_pretrained_audio
+
+    def to_dict(self):
+        data = super().to_dict()
+        data.update(
+            {
+                "encoder_model":         self.encoder_model,
+                "project_dim":           self.project_dim,
+                "load_pretrained_audio": self.load_pretrained_audio,
+            }
+        )
+        return data
+    
 
 class Qwen2VLVisionConfig(PretrainedConfig):
     model_type = "qwen2_vl"
@@ -207,6 +236,7 @@ class Qwen2VLTextConfig(PretrainedConfig):
         rope_scaling=None,
         image_token_id=None,
         video_token_id=None,
+        audio_token_id=None,
         **kwargs,
     ):
         self.vocab_size = vocab_size
@@ -254,6 +284,7 @@ class Qwen2VLTextConfig(PretrainedConfig):
         rope_config_validation(self, ignore_keys={"mrope_section"})
         self.image_token_id = image_token_id
         self.video_token_id = video_token_id
+        self.audio_token_id = audio_token_id
 
         super().__init__(tie_word_embeddings=tie_word_embeddings, **kwargs)
 
@@ -293,15 +324,19 @@ class Qwen2VLConfig(PretrainedConfig):
     ```"""
 
     model_type = "qwen2_vl"
-    sub_configs = {"vision_config": Qwen2VLVisionConfig, "text_config": Qwen2VLTextConfig}
+    sub_configs = {"vision_config": Qwen2VLVisionConfig, 
+                   "text_config": Qwen2VLTextConfig,
+                   "audio_config": Qwen2VLAudioConfig}
     keys_to_ignore_at_inference = ["past_key_values"]
 
     def __init__(
         self,
         text_config=None,
         vision_config=None,
+        audio_config=None,
         image_token_id=151655,
         video_token_id=151656,
+        audio_token_id=151657,
         **kwargs,
     ):
         if isinstance(vision_config, dict):
@@ -315,10 +350,16 @@ class Qwen2VLConfig(PretrainedConfig):
             # For BC use all kwargs to init `TextConfig`
             self.text_config = self.sub_configs["text_config"](**kwargs)
 
+        if isinstance(audio_config, dict):
+            self.audio_config = self.sub_configs["audio_config"](**audio_config)
+        elif audio_config is None:
+            self.audio_config = self.sub_configs["audio_config"]()
+
         self.image_token_id = image_token_id
         self.video_token_id = video_token_id
+        self.audio_token_id = audio_token_id
 
         super().__init__(**kwargs)
 
 
-__all__ = ["Qwen2VLConfig", "Qwen2VLTextConfig"]
+__all__ = ["Qwen2VLConfig", "Qwen2VLTextConfig", "Qwen2VLAudioConfig"]

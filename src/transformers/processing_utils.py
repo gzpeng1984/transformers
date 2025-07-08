@@ -1686,7 +1686,7 @@ class ProcessorMixin(PushToHubMixin):
             token_id = getattr(self, f"{modality}_token_id")
             ids_count = [list(ids).count(token_id) for ids in text_inputs["input_ids"]]
             text_count = [sample.count(token_str) for sample in text]
-
+        
             if ids_count != text_count:
                 raise ValueError(
                     f"Mismatch in `{modality}` token count between text and `input_ids`. Got ids={ids_count} and text={text_count}. "

@@ -32,6 +32,9 @@ from ...tokenization_utils_base import PreTokenizedInput, TextInput
 from ...utils import logging
 from ...video_utils import VideoInput
 from ...audio_utils import AudioInput
+from transformers import WhisperFeatureExtractor
+
+fe = WhisperFeatureExtractor.from_pretrained("openai/whisper-large-v3-turbo")
 
 logger = logging.get_logger(__name__)
 
@@ -103,26 +106,20 @@ class Qwen2VLProcessor(ProcessorMixin):
         super().__init__(image_processor, tokenizer, video_processor, chat_template=chat_template)
 
     def audio_processor(self, audios):
-        def compute_audio_token_length(audio_array, sample_rate=16000, hop_length=320):
-            """
-            Estimate number of audio tokens based on audio length.
-
-            Args:
-                audio_array (np.ndarray or Tensor): Raw audio signal, 1D array.
-                sample_rate (int): Audio sampling rate in Hz (default 16 kHz).
-                hop_length (int): Number of samples per token frame. Typically, 320 (20ms).
-
-            Returns:
-                int: Estimated number of tokens.
-            """
-            return len(audio_array) // hop_length
+        def compute_audio_token_length(audio_array, samplping_rate, compression_rate=2): # for turbo encoder
+            mel = fe(
+                audio_array.squeeze(),
+                sampling_rate=samplping_rate,
+                return_tensors="pt"
+            )   
+            return mel['input_features'].shape[-1] // compression_rate
         
         if audios is not None:
             audio_inputs = []
             audio_lengths = []
             output = {}
-            for audio in audios:
-                length = compute_audio_token_length(audio)
+            for audio, sampling_rate in audios:
+                length = compute_audio_token_length(audio, samplping_rate=sampling_rate)
                 audio_lengths.append(length)
 
                 audio_tensor = [self.audio_token_id] * length
@@ -131,7 +128,7 @@ class Qwen2VLProcessor(ProcessorMixin):
 
             # Add to model input dictionary
             output["audio_input_ids"] = concatenated_audio
-            output["audio_grid_thw"] = audio_lengths
+            output["audio_grid_thw"] = np.array([[length, 1, 1] for length in audio_lengths])
             return output
         return None
 
@@ -196,7 +193,8 @@ class Qwen2VLProcessor(ProcessorMixin):
             video_grid_thw = videos_inputs["video_grid_thw"]
 
         if audios is not None:
-            audios_inputs = self.audio_processor(audios=audios, **output_kwargs["audios_kwargs"])
+            # audios_inputs = self.audio_processor(audios=audios, **output_kwargs["audios_kwargs"])
+            audios_inputs = self.audio_processor(audios=audios)
             audio_grid_thw = audios_inputs["audio_grid_thw"]
 
         if not isinstance(text, list):
@@ -209,6 +207,7 @@ class Qwen2VLProcessor(ProcessorMixin):
             for i in range(len(text)):
                 while self.audio_token in text[i]:
                     num_audio_tokens = audio_grid_thw[index].prod()
+                    # print(num_audio_tokens)
                     text[i] = text[i].replace(self.audio_token, "<|placeholder|>" * num_audio_tokens, 1)
                     index += 1
                 text[i] = text[i].replace("<|placeholder|>", self.audio_token)
