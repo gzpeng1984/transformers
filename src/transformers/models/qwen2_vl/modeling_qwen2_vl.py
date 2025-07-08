@@ -64,8 +64,8 @@ class AudioEncoder(nn.Module):
         super().__init__()
         wcfg          = WhisperConfig.from_pretrained(encoder_model)
         self.encoder  = WhisperModel(wcfg).encoder 
-        self.hid_dim  = wcfg.d_model       # 1280
-        self.stride   = wcfg.d_model       # 2
+        self.hid_dim  = wcfg.d_model              # 1280
+        self.stride   = wcfg.conv_stride[-1]       # 2
         self.proj     = nn.Linear(self.hid_dim, project_dim)
 
     def forward(self, mel):
