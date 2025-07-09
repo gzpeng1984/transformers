@@ -123,7 +123,7 @@ class Qwen2VLProcessor(ProcessorMixin):
                 audio_lengths.append(length)
 
                 audio_tensor = [self.audio_token_id] * length
-                audio_inputs.append(audio_tensor)
+                audio_inputs.append(mel)
             concatenated_audio = [token for seq in audio_inputs for token in seq]
 
             # Add to model input dictionary
