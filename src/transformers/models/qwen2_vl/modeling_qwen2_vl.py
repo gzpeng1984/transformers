@@ -71,7 +71,7 @@ class AudioEncoder(nn.Module):
     def forward(self, mel):
         x = self.encoder(input_features=mel).last_hidden_state
         x = self.proj(x)
-        return x
+        return list(x)
 
     @classmethod
     def _from_config(cls, audio_cfg):
