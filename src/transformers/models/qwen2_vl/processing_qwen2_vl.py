@@ -112,14 +112,14 @@ class Qwen2VLProcessor(ProcessorMixin):
                 sampling_rate=samplping_rate,
                 return_tensors="pt"
             )   
-            return mel['input_features'].shape[-1] // compression_rate
+            return mel['input_features'].shape[-1] // compression_rate, mel['input_features']
         
         if audios is not None:
             audio_inputs = []
             audio_lengths = []
             output = {}
             for audio, sampling_rate in audios:
-                length = compute_audio_token_length(audio, samplping_rate=sampling_rate)
+                length, mel = compute_audio_token_length(audio, samplping_rate=sampling_rate)
                 audio_lengths.append(length)
 
                 audio_tensor = [self.audio_token_id] * length
@@ -127,7 +127,7 @@ class Qwen2VLProcessor(ProcessorMixin):
             concatenated_audio = [token for seq in audio_inputs for token in seq]
 
             # Add to model input dictionary
-            output["audio_input_ids"] = concatenated_audio
+            output["audio_values"] = audio_inputs
             output["audio_grid_thw"] = np.array([[length, 1, 1] for length in audio_lengths])
             return output
         return None
