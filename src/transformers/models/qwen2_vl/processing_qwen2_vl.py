@@ -24,7 +24,7 @@ Processor class for Qwen2-VL.
 from typing import List, Optional, Union
 
 import numpy as np
-
+import torch
 from ...feature_extraction_utils import BatchFeature
 from ...image_utils import ImageInput
 from ...processing_utils import ImagesKwargs, MultiModalData, ProcessingKwargs, ProcessorMixin, Unpack, AudioKwargs
@@ -121,13 +121,16 @@ class Qwen2VLProcessor(ProcessorMixin):
             for audio, sampling_rate in audios:
                 length, mel = compute_audio_token_length(audio, samplping_rate=sampling_rate)
                 audio_lengths.append(length)
-
+                # print(mel.shape)
                 audio_tensor = [self.audio_token_id] * length
-                audio_inputs.append(mel)
+                audio_inputs.append(mel.squeeze())
             concatenated_audio = [token for seq in audio_inputs for token in seq]
-
+            max_len = max(m.shape[-1] for m in audio_inputs)
+            padded  = [ torch.nn.functional.pad(m, (0, max_len - m.shape[-1])) 
+                        for m in audio_inputs ]
+            output["audio_values"] = torch.stack(padded)
             # Add to model input dictionary
-            output["audio_values"] = audio_inputs
+            # output["audio_values"] = audio_inputs
             output["audio_grid_thw"] = np.array([[length, 1, 1] for length in audio_lengths])
             return output
         return None
