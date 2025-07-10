@@ -69,9 +69,11 @@ class AudioEncoder(nn.Module):
         self.proj     = nn.Linear(self.hid_dim, project_dim)
 
     def forward(self, mel):
+        print("mel: ", mel.shape)
         x = self.encoder(input_features=mel).last_hidden_state
+        print("x: ", x.shape)
         x = self.proj(x)
-        return list(x)
+        return tuple(list(x))
 
     @classmethod
     def _from_config(cls, audio_cfg):
