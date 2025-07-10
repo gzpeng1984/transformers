@@ -1360,7 +1360,7 @@ class Qwen2VLModel(Qwen2VLPreTrainedModel):
             inputs_embeds = self.get_input_embeddings()(input_ids)
             if pixel_values is not None:
                 image_embeds = self.get_image_features(pixel_values, image_grid_thw)
-                print(image_embeds.shape)
+                print(image_embeds[0].shape)
                 image_embeds = torch.cat(image_embeds, dim=0)
                 print(image_embeds.shape)
                 n_image_tokens = (input_ids == self.config.image_token_id).sum().item()
