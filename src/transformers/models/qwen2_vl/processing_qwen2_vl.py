@@ -135,7 +135,7 @@ class Qwen2VLProcessor(ProcessorMixin):
             ]
 
             # each element is now 2-D (128, 3000) fp16
-            output["audio_values"] = torch.stack(padded)
+            output["audio_values"] = torch.stack(audio_inputs)
             # Add to model input dictionary
             # output["audio_values"] = audio_inputs
             output["audio_grid_thw"] = np.array([[length, 1, 1] for length in audio_lengths])
