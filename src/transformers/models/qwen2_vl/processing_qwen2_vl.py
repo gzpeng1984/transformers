@@ -125,14 +125,14 @@ class Qwen2VLProcessor(ProcessorMixin):
                 audio_tensor = [self.audio_token_id] * length
                 audio_inputs.append(mel.squeeze())
             # concatenated_audio = [token for seq in audio_inputs for token in seq]
-            max_len = max(m.shape[-1] for m in audio_inputs)
-            padded = [
-                torch.nn.functional.pad(m.float(),  (0, max_len - m.shape[-1]))   # pad right
-                    .to(torch.float16)                                           # ⇢ fp16
-                    .squeeze(0) if m.dim() == 3 else                             # drop batch dim
-                    torch.nn.functional.pad(m.float(),  (0, max_len - m.shape[-1])).to(torch.float16)
-                for m in audio_inputs                                             # list of tensors
-            ]
+            # max_len = max(m.shape[-1] for m in audio_inputs)
+            # padded = [
+            #     torch.nn.functional.pad(m.float(),  (0, max_len - m.shape[-1]))   # pad right
+            #         .to(torch.float16)                                           # ⇢ fp16
+            #         .squeeze(0) if m.dim() == 3 else                             # drop batch dim
+            #         torch.nn.functional.pad(m.float(),  (0, max_len - m.shape[-1])).to(torch.float16)
+            #     for m in audio_inputs                                             # list of tensors
+            # ]
 
             # each element is now 2-D (128, 3000) fp16
             output["audio_values"] = torch.stack(audio_inputs)

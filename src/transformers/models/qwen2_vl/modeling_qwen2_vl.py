@@ -1362,9 +1362,10 @@ class Qwen2VLModel(Qwen2VLPreTrainedModel):
             inputs_embeds = self.get_input_embeddings()(input_ids)
             if pixel_values is not None:
                 image_embeds = self.get_image_features(pixel_values, image_grid_thw)
-                # print(image_embeds[0].shape)
+                print("image embeds length: ", len(image_embeds))
+                print("image embed shape: ", image_embeds[0].shape)
                 image_embeds = torch.cat(image_embeds, dim=0)
-                # print(image_embeds.shape)
+                print("image embed shape after cat: ", image_embeds.shape)
                 n_image_tokens = (input_ids == self.config.image_token_id).sum().item()
                 n_image_features = image_embeds.shape[0]
                 if not is_torchdynamo_compiling() and n_image_tokens != n_image_features:
@@ -1400,8 +1401,10 @@ class Qwen2VLModel(Qwen2VLPreTrainedModel):
 
             if audio_values is not None:
                 audio_embeds = self.get_audio_features(audio_values)
+                print("audio embeds length: ", len(image_embeds))
+                print("audio embed shape: ", image_embeds[0].shape)
                 audio_embeds = torch.cat(audio_embeds, dim=0)
-                # print(audio_embeds.shape)
+                print("audio embed shape after cat: ", image_embeds.shape)
                 n_audio_tokens = (input_ids == self.config.audio_token_id).sum().item()
                 n_audio_features = audio_embeds.shape[0]
                 if not is_torchdynamo_compiling() and n_audio_tokens != n_audio_features:
