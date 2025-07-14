@@ -1194,6 +1194,7 @@ class Qwen2VLModel(Qwen2VLPreTrainedModel):
                 mrope_position_deltas.append(llm_positions.max() + 1 - len(total_input_ids[i]))
             mrope_position_deltas = torch.tensor(mrope_position_deltas, device=input_ids.device).unsqueeze(1)
             return position_ids, mrope_position_deltas
+        
         elif input_ids is not None and audio_grid_thw is not None: 
             total_input_ids = input_ids
             if attention_mask is None:
@@ -1464,7 +1465,7 @@ class Qwen2VLModel(Qwen2VLPreTrainedModel):
         print("rope_deltas: ", rope_deltas)
         if rope_deltas is not None:
             print("rope_deltas shape: ",rope_deltas.shape)
-        print("position_ids: ", position_ids)
+        print("position_ids: ", position_ids[:50])
         if position_ids is not None:
             print("position_ids shape: ",position_ids.shape)
         print("cache_position: ", cache_position)
