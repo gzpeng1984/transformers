@@ -1359,9 +1359,11 @@ class Qwen2VLModel(Qwen2VLPreTrainedModel):
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
         print("rope_deltas: ", rope_deltas)
-        print("rope_deltas shape: ",rope_deltas.shape)
+        if rope_deltas is not None:
+            print("rope_deltas shape: ",rope_deltas.shape)
         print("position_ids: ", position_ids)
-        print("position_ids shape: ",position_ids.shape)
+        if position_ids is not None:
+            print("position_ids shape: ",position_ids.shape)
 
 
         if inputs_embeds is None:
