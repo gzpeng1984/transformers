@@ -1358,12 +1358,6 @@ class Qwen2VLModel(Qwen2VLPreTrainedModel):
         )
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
-        print("rope_deltas: ", rope_deltas)
-        if rope_deltas is not None:
-            print("rope_deltas shape: ",rope_deltas.shape)
-        print("position_ids: ", position_ids)
-        if position_ids is not None:
-            print("position_ids shape: ",position_ids.shape)
 
 
         if inputs_embeds is None:
@@ -1466,6 +1460,16 @@ class Qwen2VLModel(Qwen2VLPreTrainedModel):
                     delta = delta.to(position_ids.device)
                 position_ids = position_ids.add(delta)
                 position_ids = position_ids.unsqueeze(0).expand(3, -1, -1)
+
+        print("rope_deltas: ", rope_deltas)
+        if rope_deltas is not None:
+            print("rope_deltas shape: ",rope_deltas.shape)
+        print("position_ids: ", position_ids)
+        if position_ids is not None:
+            print("position_ids shape: ",position_ids.shape)
+        print("cache_position: ", cache_position)
+        if cache_position is not None:
+            print("cache_position shape: ",cache_position.shape)
 
         outputs = self.language_model(
             input_ids=None,
