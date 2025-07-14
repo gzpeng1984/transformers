@@ -1212,7 +1212,7 @@ class Qwen2VLModel(Qwen2VLPreTrainedModel):
                 llm_pos_ids_list: list = []
                 st = 0
                 remain_audios = audio_nums
-                for _ in range(remain_audios):
+                for _ in range(audio_nums):
                     if audio_token_id in input_tokens and remain_audios > 0:
                         ed_aduio = input_tokens.index(audio_token_id, st)
                     else:
