@@ -1408,8 +1408,8 @@ class Qwen2VLModel(Qwen2VLPreTrainedModel):
                 # print("audio embeds length: ", len(audio_embeds))
                 # print("audio embed shape: ", audio_embeds[0].shape)
                 audio_embeds = torch.cat(audio_embeds, dim=0)
-                print("audio embeds: \n", audio_embeds[:, :8])
-                print("audio embeds shape: ", audio_embeds.shape)
+                # print("audio embeds: \n", audio_embeds[:, :8])
+                # print("audio embeds shape: ", audio_embeds.shape)
 
                 # print("audio embed shape after cat: ", audio_embeds.shape)
                 n_audio_tokens = (input_ids == self.config.audio_token_id).sum().item()
@@ -1425,13 +1425,13 @@ class Qwen2VLModel(Qwen2VLPreTrainedModel):
                     .expand_as(inputs_embeds)
                     .to(inputs_embeds.device)
                 )
-                print("self.config.audio_token_id: ", self.config.audio_token_id)
+                # print("self.config.audio_token_id: ", self.config.audio_token_id)
                 audio_embeds = audio_embeds.to(inputs_embeds.device, inputs_embeds.dtype)
                 inputs_embeds = inputs_embeds.masked_scatter(audio_mask, audio_embeds)               
-                print("n_audio_tokens: ", n_audio_tokens)
-                print("n_audio_features: ", n_audio_features)
-                print("audio_embeds shape", audio_embeds.shape)
-                print("audio_mask sum", audio_mask.sum()) 
+                # print("n_audio_tokens: ", n_audio_tokens)
+                # print("n_audio_features: ", n_audio_features)
+                # print("audio_embeds shape", audio_embeds.shape)
+                # print("audio_mask sum", audio_mask.sum()) 
 
         if position_ids is None:
             attention_mask_tensor = (
