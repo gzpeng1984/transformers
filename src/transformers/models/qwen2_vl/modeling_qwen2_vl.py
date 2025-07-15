@@ -1408,7 +1408,7 @@ class Qwen2VLModel(Qwen2VLPreTrainedModel):
                 # print("audio embeds length: ", len(audio_embeds))
                 # print("audio embed shape: ", audio_embeds[0].shape)
                 audio_embeds = torch.cat(audio_embeds, dim=0)
-                print("audio embeds: ", audio_embeds[:, :8])
+                print("audio embeds: \n", audio_embeds[:, :8])
                 print("audio embeds shape: ", audio_embeds.shape)
 
                 # print("audio embed shape after cat: ", audio_embeds.shape)
@@ -1472,7 +1472,8 @@ class Qwen2VLModel(Qwen2VLPreTrainedModel):
                 position_ids = position_ids.unsqueeze(0).expand(3, -1, -1)
         
         audio_rows = (input_ids == self.config.audio_token_id).nonzero(as_tuple=True)[1]
-        print(inputs_embeds[0, audio_rows, :8])        
+        print(inputs_embeds[0, audio_rows, :8])  
+        print(inputs_embeds)      
         # print("rope_deltas: ", rope_deltas)
         # if rope_deltas is not None:
         #     print("rope_deltas shape: ",rope_deltas.shape)
