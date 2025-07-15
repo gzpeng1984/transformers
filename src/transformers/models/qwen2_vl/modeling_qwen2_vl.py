@@ -1309,10 +1309,10 @@ class Qwen2VLModel(Qwen2VLPreTrainedModel):
         image_embeds = torch.split(image_embeds, split_sizes)
         return image_embeds
 
-    def get_audio_features(self, audio_values, audio_grid_thw):
+    def get_audio_features(self, audio_values):
         # note that audio is in log-mel-temporal
-        audio_values = audio_values.type(self.audio.dtype)
-        audio_embeds = self.audio(audio_values, audio_grid_thw)
+        # audio_values = audio_values.type(self.audio.dtype)
+        audio_embeds = self.audio(audio_values)
         return audio_embeds
 
     @auto_docstring
@@ -1404,7 +1404,7 @@ class Qwen2VLModel(Qwen2VLPreTrainedModel):
                 inputs_embeds = inputs_embeds.masked_scatter(video_mask, video_embeds)
 
             if audio_values is not None:
-                audio_embeds = self.get_audio_features(audio_values, audio_grid_thw)
+                audio_embeds = self.get_audio_features(audio_values)
                 # print("audio embeds length: ", len(audio_embeds))
                 # print("audio embed shape: ", audio_embeds[0].shape)
                 audio_embeds = torch.cat(audio_embeds, dim=0)
