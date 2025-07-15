@@ -884,7 +884,6 @@ class Qwen2VLTextModel(Qwen2VLPreTrainedModel):
         super().__init__(config)
         self.padding_idx = config.pad_token_id
         self.vocab_size = config.vocab_size
-        print("self.vocab_size :", self.vocab_size)
 
         self.embed_tokens = nn.Embedding(config.vocab_size, config.hidden_size, self.padding_idx)
         self.layers = nn.ModuleList(
@@ -1413,10 +1412,7 @@ class Qwen2VLModel(Qwen2VLPreTrainedModel):
                 # print("audio embed shape after cat: ", audio_embeds.shape)
                 n_audio_tokens = (input_ids == self.config.audio_token_id).sum().item()
                 n_audio_features = audio_embeds.shape[0]
-                print("n_audio_tokens: ", n_audio_tokens)
-                print("n_audio_features: ", n_audio_features)
-                print("audio_embeds shape", audio_embeds.shape)
-                print("audio_mask sum", audio_mask.sum()) 
+
                 if not is_torchdynamo_compiling() and n_audio_tokens != n_audio_features:
                     raise ValueError(
                         f"Audio features and audio tokens do not match: tokens: {n_audio_tokens}, features {n_audio_features}"
@@ -1430,7 +1426,10 @@ class Qwen2VLModel(Qwen2VLPreTrainedModel):
                 print("self.config.audio_token_id: ", self.config.audio_token_id)
                 audio_embeds = audio_embeds.to(inputs_embeds.device, inputs_embeds.dtype)
                 inputs_embeds = inputs_embeds.masked_scatter(audio_mask, audio_embeds)               
-                
+                print("n_audio_tokens: ", n_audio_tokens)
+                print("n_audio_features: ", n_audio_features)
+                print("audio_embeds shape", audio_embeds.shape)
+                print("audio_mask sum", audio_mask.sum()) 
 
         if position_ids is None:
             attention_mask_tensor = (
