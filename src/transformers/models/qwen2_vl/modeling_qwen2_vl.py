@@ -67,14 +67,14 @@ class AudioEncoder(nn.Module):
         self.hid_dim  = wcfg.d_model              # 1280
         self.stride   = 2      # 2
         self.proj     = nn.Linear(self.hid_dim, project_dim)
+        self.spatial_merge_size = 1
 
     def forward(self, mel):
-        # print("mel: ", mel.shape)
         x = self.encoder(input_features=mel).last_hidden_state
         # print("x: ", x.shape)
         x = self.proj(x)
-        return tuple(list(x))
-
+        return tuple(x)
+    
     @classmethod
     def _from_config(cls, audio_cfg):
         """
@@ -1309,9 +1309,10 @@ class Qwen2VLModel(Qwen2VLPreTrainedModel):
         image_embeds = torch.split(image_embeds, split_sizes)
         return image_embeds
 
-    def get_audio_features(self, audio_values):
+    def get_audio_features(self, audio_values, audio_grid_thw):
         # note that audio is in log-mel-temporal
-        audio_embeds = self.audio(audio_values)
+        audio_values = audio_values.type(self.audio.dtype)
+        audio_embeds = self.audio(audio_values, audio_grid_thw)
         return audio_embeds
 
     @auto_docstring
@@ -1365,10 +1366,10 @@ class Qwen2VLModel(Qwen2VLPreTrainedModel):
             inputs_embeds = self.get_input_embeddings()(input_ids)
             if pixel_values is not None:
                 image_embeds = self.get_image_features(pixel_values, image_grid_thw)
-                print("image embeds length: ", len(image_embeds))
-                print("image embed shape: ", image_embeds[0].shape)
+                # print("image embeds length: ", len(image_embeds))
+                # print("image embed shape: ", image_embeds[0].shape)
                 image_embeds = torch.cat(image_embeds, dim=0)
-                print("image embed shape after cat: ", image_embeds.shape)
+                # print("image embed shape after cat: ", image_embeds.shape)
                 n_image_tokens = (input_ids == self.config.image_token_id).sum().item()
                 n_image_features = image_embeds.shape[0]
                 if not is_torchdynamo_compiling() and n_image_tokens != n_image_features:
@@ -1403,11 +1404,11 @@ class Qwen2VLModel(Qwen2VLPreTrainedModel):
                 inputs_embeds = inputs_embeds.masked_scatter(video_mask, video_embeds)
 
             if audio_values is not None:
-                audio_embeds = self.get_audio_features(audio_values)
-                print("audio embeds length: ", len(audio_embeds))
-                print("audio embed shape: ", audio_embeds[0].shape)
+                audio_embeds = self.get_audio_features(audio_values, audio_grid_thw)
+                # print("audio embeds length: ", len(audio_embeds))
+                # print("audio embed shape: ", audio_embeds[0].shape)
                 audio_embeds = torch.cat(audio_embeds, dim=0)
-                print("audio embed shape after cat: ", audio_embeds.shape)
+                # print("audio embed shape after cat: ", audio_embeds.shape)
                 n_audio_tokens = (input_ids == self.config.audio_token_id).sum().item()
                 n_audio_features = audio_embeds.shape[0]
                 if not is_torchdynamo_compiling() and n_audio_tokens != n_audio_features:
@@ -1462,15 +1463,16 @@ class Qwen2VLModel(Qwen2VLPreTrainedModel):
                 position_ids = position_ids.add(delta)
                 position_ids = position_ids.unsqueeze(0).expand(3, -1, -1)
 
-        print("rope_deltas: ", rope_deltas)
-        if rope_deltas is not None:
-            print("rope_deltas shape: ",rope_deltas.shape)
-        print("position_ids: ", position_ids[:50])
-        if position_ids is not None:
-            print("position_ids shape: ",position_ids.shape)
-        print("cache_position: ", cache_position)
-        if cache_position is not None:
-            print("cache_position shape: ",cache_position.shape)
+        print("input embeds: ", inputs_embeds)
+        # print("rope_deltas: ", rope_deltas)
+        # if rope_deltas is not None:
+        #     print("rope_deltas shape: ",rope_deltas.shape)
+        # print("position_ids: ", position_ids[:50])
+        # if position_ids is not None:
+        #     print("position_ids shape: ",position_ids.shape)
+        # print("cache_position: ", cache_position)
+        # if cache_position is not None:
+        #     print("cache_position shape: ",cache_position.shape)
 
         outputs = self.language_model(
             input_ids=None,

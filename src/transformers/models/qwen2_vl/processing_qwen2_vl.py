@@ -117,12 +117,14 @@ class Qwen2VLProcessor(ProcessorMixin):
         if audios is not None:
             audio_inputs = []
             audio_lengths = []
+            audio_input_ids = []
             output = {}
             for audio, sampling_rate in audios:
                 length, mel = compute_audio_token_length(audio, samplping_rate=sampling_rate)
                 audio_lengths.append(length)
                 # print(mel.shape)
                 audio_tensor = [self.audio_token_id] * length
+                audio_input_ids.append(audio_tensor)
                 audio_inputs.append(mel.squeeze())
             # concatenated_audio = [token for seq in audio_inputs for token in seq]
             # max_len = max(m.shape[-1] for m in audio_inputs)
@@ -137,7 +139,7 @@ class Qwen2VLProcessor(ProcessorMixin):
             # each element is now 2-D (128, 3000) fp16
             output["audio_values"] = torch.stack(audio_inputs)
             # Add to model input dictionary
-            # output["audio_values"] = audio_inputs
+            # output["audio_input_ids"] = audio_input_ids
             output["audio_grid_thw"] = np.array([[length, 1, 1] for length in audio_lengths])
             return output
         return None
