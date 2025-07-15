@@ -1469,7 +1469,7 @@ class Qwen2VLModel(Qwen2VLPreTrainedModel):
                 position_ids = position_ids.add(delta)
                 position_ids = position_ids.unsqueeze(0).expand(3, -1, -1)
         
-        audio_rows = (input_ids == self.model.config.audio_token_id).nonzero(as_tuple=True)[1]
+        audio_rows = (input_ids == self.config.audio_token_id).nonzero(as_tuple=True)[1]
         print(inputs_embeds[0, audio_rows, :8])        
         # print("rope_deltas: ", rope_deltas)
         # if rope_deltas is not None:
