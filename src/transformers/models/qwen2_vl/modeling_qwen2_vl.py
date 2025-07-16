@@ -68,7 +68,7 @@ class AudioEncoder(nn.Module):
         self.stride   = 2      # 2
         self.proj     = nn.Linear(self.hid_dim, project_dim)
         self.spatial_merge_size = 1
-        num_heads = 28
+        num_heads = 28 # LLM num of heads
         head_dim = project_dim // num_heads
         self.rotary_pos_emb = VisionRotaryEmbedding(head_dim // 2)
 
