@@ -68,47 +68,15 @@ class AudioEncoder(nn.Module):
         self.stride   = 2      # 2
         self.proj     = nn.Linear(self.hid_dim, project_dim)
         self.spatial_merge_size = 1
-        num_heads = 28 # LLM num of heads
-        head_dim = project_dim // num_heads
-        self.rotary_pos_emb = VisionRotaryEmbedding(project_dim)
-
-    def rot_pos_emb(self, grid_thw):
-        pos_ids = []
-        for t, h, w in grid_thw:
-            hpos_ids = torch.arange(h).unsqueeze(1).expand(-1, w)
-            hpos_ids = hpos_ids.reshape(
-                h // self.spatial_merge_size,
-                self.spatial_merge_size,
-                w // self.spatial_merge_size,
-                self.spatial_merge_size,
-            )
-            hpos_ids = hpos_ids.permute(0, 2, 1, 3)
-            hpos_ids = hpos_ids.flatten()
-
-            wpos_ids = torch.arange(w).unsqueeze(0).expand(h, -1)
-            wpos_ids = wpos_ids.reshape(
-                h // self.spatial_merge_size,
-                self.spatial_merge_size,
-                w // self.spatial_merge_size,
-                self.spatial_merge_size,
-            )
-            wpos_ids = wpos_ids.permute(0, 2, 1, 3)
-            wpos_ids = wpos_ids.flatten()
-            pos_ids.append(torch.stack([hpos_ids, wpos_ids], dim=-1).repeat(t, 1))
-        pos_ids = torch.cat(pos_ids, dim=0)
-        max_grid_size = grid_thw[:, 1:].max()
-        rotary_pos_emb_full = self.rotary_pos_emb(max_grid_size)
-        rotary_pos_emb = rotary_pos_emb_full[pos_ids].flatten(1)
-        return rotary_pos_emb
-
+        self.abs_pos_emb = nn.Embedding(1500, project_dim)
 
     def forward(self, mel, audio_grid_thw):
-        rotary_pos_emb = self.rot_pos_emb(audio_grid_thw)
-        emb = torch.cat((rotary_pos_emb, rotary_pos_emb), dim=-1)
-        print("emb shape: ", emb.shape)
-        position_embeddings = (emb.cos(), emb.sin())
-
         x = self.encoder(input_features=mel).last_hidden_state
+
+        B, T, D = x.shape
+        pos_ids = torch.arange(T, device=x.device).unsqueeze(0).expand(B, -1)  # [B, T]
+        position_embeddings = self.abs_pos_emb(pos_ids)
+
         # print("x: ", x.shape)
         x = self.proj(x)  # still [B, T, D]
         print("x: ", x.shape)
