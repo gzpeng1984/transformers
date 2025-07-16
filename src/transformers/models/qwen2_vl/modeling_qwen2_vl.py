@@ -70,7 +70,7 @@ class AudioEncoder(nn.Module):
         self.spatial_merge_size = 1
         num_heads = 28 # LLM num of heads
         head_dim = project_dim // num_heads
-        self.rotary_pos_emb = VisionRotaryEmbedding(head_dim // 2)
+        self.rotary_pos_emb = VisionRotaryEmbedding(project_dim)
 
     def rot_pos_emb(self, grid_thw):
         pos_ids = []
@@ -104,6 +104,7 @@ class AudioEncoder(nn.Module):
 
     def forward(self, mel, audio_grid_thw):
         rotary_pos_emb = self.rot_pos_emb(audio_grid_thw)
+        print(rotary_pos_emb.shape)
         x = self.encoder(input_features=mel).last_hidden_state
         # print("x: ", x.shape)
         x = self.proj(x) + rotary_pos_emb
