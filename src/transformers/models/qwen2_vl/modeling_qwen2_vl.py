@@ -111,7 +111,7 @@ class AudioEncoder(nn.Module):
         x = self.encoder(input_features=mel).last_hidden_state
         # print("x: ", x.shape)
         x = self.proj(x)  # still [B, T, D]
-
+        print("x: ", x.shape)
         x = x + position_embeddings
         return tuple(x)
     
