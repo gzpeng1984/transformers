@@ -69,20 +69,52 @@ class AudioEncoder(nn.Module):
         self.proj     = nn.Linear(self.hid_dim, project_dim)
         self.spatial_merge_size = 1
 
-    def forward(self, mel):
+    def rot_pos_emb(self, grid_thw):
+        pos_ids = []
+        for t, h, w in grid_thw:
+            hpos_ids = torch.arange(h).unsqueeze(1).expand(-1, w)
+            hpos_ids = hpos_ids.reshape(
+                h // self.spatial_merge_size,
+                self.spatial_merge_size,
+                w // self.spatial_merge_size,
+                self.spatial_merge_size,
+            )
+            hpos_ids = hpos_ids.permute(0, 2, 1, 3)
+            hpos_ids = hpos_ids.flatten()
+
+            wpos_ids = torch.arange(w).unsqueeze(0).expand(h, -1)
+            wpos_ids = wpos_ids.reshape(
+                h // self.spatial_merge_size,
+                self.spatial_merge_size,
+                w // self.spatial_merge_size,
+                self.spatial_merge_size,
+            )
+            wpos_ids = wpos_ids.permute(0, 2, 1, 3)
+            wpos_ids = wpos_ids.flatten()
+            pos_ids.append(torch.stack([hpos_ids, wpos_ids], dim=-1).repeat(t, 1))
+        pos_ids = torch.cat(pos_ids, dim=0)
+        max_grid_size = grid_thw[:, 1:].max()
+        rotary_pos_emb_full = self.rotary_pos_emb(max_grid_size)
+        rotary_pos_emb = rotary_pos_emb_full[pos_ids].flatten(1)
+        return rotary_pos_emb
+
+
+    def forward(self, mel, audio_grid_thw):
+        rotary_pos_emb = self.rot_pos_emb(audio_grid_thw)
         x = self.encoder(input_features=mel).last_hidden_state
         # print("x: ", x.shape)
-        x = self.proj(x)
+        x = self.proj(x) + rotary_pos_emb
         return tuple(x)
     
     @classmethod
-    def _from_config(cls, audio_cfg):
+    def _from_config(cls, audio_cfg, audio_grid_thw):
         """
         `audio_cfg` is the Qwen2VLAudioConfig instance.
         """
         return cls(
             encoder_model=audio_cfg.encoder_model,
             project_dim=audio_cfg.project_dim,
+            audio_grid_thw = audio_grid_thw,
         )
     
 @dataclass
@@ -1309,10 +1341,10 @@ class Qwen2VLModel(Qwen2VLPreTrainedModel):
         image_embeds = torch.split(image_embeds, split_sizes)
         return image_embeds
 
-    def get_audio_features(self, audio_values):
+    def get_audio_features(self, audio_values, audio_grid_thw):
         # note that audio is in log-mel-temporal
         # audio_values = audio_values.type(self.audio.dtype)
-        audio_embeds = self.audio(audio_values)
+        audio_embeds = self.audio(audio_values, audio_grid_thw)
         return audio_embeds
 
     @auto_docstring
