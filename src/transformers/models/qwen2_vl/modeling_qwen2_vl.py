@@ -105,6 +105,7 @@ class AudioEncoder(nn.Module):
     def forward(self, mel, audio_grid_thw):
         rotary_pos_emb = self.rot_pos_emb(audio_grid_thw)
         emb = torch.cat((rotary_pos_emb, rotary_pos_emb), dim=-1)
+        print("emb shape: ", emb.shape)
         position_embeddings = (emb.cos(), emb.sin())
 
         x = self.encoder(input_features=mel).last_hidden_state
