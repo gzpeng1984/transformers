@@ -107,14 +107,13 @@ class AudioEncoder(nn.Module):
         return tuple(x)
     
     @classmethod
-    def _from_config(cls, audio_cfg, audio_grid_thw):
+    def _from_config(cls, audio_cfg):
         """
         `audio_cfg` is the Qwen2VLAudioConfig instance.
         """
         return cls(
             encoder_model=audio_cfg.encoder_model,
             project_dim=audio_cfg.project_dim,
-            audio_grid_thw = audio_grid_thw,
         )
     
 @dataclass
