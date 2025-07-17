@@ -68,22 +68,14 @@ class AudioEncoder(nn.Module):
         self.stride   = 2      # 2
         self.proj     = nn.Linear(self.hid_dim, project_dim)
         self.spatial_merge_size = 1
-        self.abs_pos_emb = nn.Embedding(1500, project_dim)
-        self.norm = nn.LayerNorm(project_dim)
 
     def forward(self, mel, audio_grid_thw):
         x = self.encoder(input_features=mel).last_hidden_state
 
-        B, T, D = x.shape
-        pos_ids = torch.arange(T, device=x.device).unsqueeze(0).expand(B, -1)  # [B, T]
-        position_embeddings = self.abs_pos_emb(pos_ids)
-
         # print("x: ", x.shape)
         x = self.proj(x)  # still [B, T, D]
-        x = self.norm(x)
 
         print("x: ", x.shape)
-        x = x + position_embeddings
         return tuple(x)
     
     @classmethod
