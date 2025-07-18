@@ -75,7 +75,7 @@ class AudioEncoder(nn.Module):
         # print("x: ", x.shape)
         x = self.proj(x)  # still [B, T, D]
 
-        print("x: ", x.shape)
+        # print("x: ", x.shape)
         return tuple(x)
     
     @classmethod
