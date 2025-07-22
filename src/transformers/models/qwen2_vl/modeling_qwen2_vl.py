@@ -1424,7 +1424,7 @@ class Qwen2VLModel(Qwen2VLPreTrainedModel):
             if audio_values is not None:
                 st = 0
                 encodings =[]
-                audio_values = audio_values.type(self.audio_encoder.get_dtype())
+                audio_values = audio_values.type(self.audio.encoder.get_dtype())
                 for length in audio_lengths:
                     encoding = self.get_audio_features(audio_values[st:st+length])
                     encodings.append(encoding)
