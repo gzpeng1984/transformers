@@ -56,8 +56,10 @@ if is_flash_attn_available():
 logger = logging.get_logger(__name__)
 
 
-from transformers import WhisperConfig, WhisperModel
+from transformers import WhisperConfig, WhisperModel, WhisperFeatureExtractor
 from transformers.models.whisper.modeling_whisper import WhisperEncoder
+
+fe = WhisperFeatureExtractor.from_pretrained("openai/whisper-base")
 
 class AudioEncoder(nn.Module):
     def __init__(self, encoder_model:str,  project_dim: int):
@@ -69,13 +71,24 @@ class AudioEncoder(nn.Module):
         self.proj     = nn.Linear(self.hid_dim, project_dim)
         self.spatial_merge_size = 1
 
-    def forward(self, mel, audio_grid_thw):
+    def get_dtype(self):
+        return list(self.encoder.parameters())[0].dtype
+    
+    def get_device(self):
+        return list(self.encoder.parameters())[0].device
+    
+    def forward(self, audio):
+        mel = fe(
+            audio,
+            sampling_rate=16000,          # must be 16000
+            return_tensors="pt",
+        )
+        mel = mel.to(dtype=self.get_dtype(), device=self.get_device()) 
+        if mel.ndim == 2:
+            # add a BS f 1
+            mel = mel.unsqueeze(0)
         x = self.encoder(input_features=mel).last_hidden_state
-
-        # print("x: ", x.shape)
-        x = self.proj(x)  # still [B, T, D]
-
-        # print("x: ", x.shape)
+        x = self.proj(x)  
         return tuple(x)
     
     @classmethod
@@ -1312,10 +1325,10 @@ class Qwen2VLModel(Qwen2VLPreTrainedModel):
         image_embeds = torch.split(image_embeds, split_sizes)
         return image_embeds
 
-    def get_audio_features(self, audio_values, audio_grid_thw):
+    def get_audio_features(self, audio_values):
         # note that audio is in log-mel-temporal
         # audio_values = audio_values.type(self.audio.dtype)
-        audio_embeds = self.audio(audio_values, audio_grid_thw)
+        audio_embeds = self.audio(audio_values)
         return audio_embeds
 
     @auto_docstring
@@ -1407,7 +1420,7 @@ class Qwen2VLModel(Qwen2VLPreTrainedModel):
                 inputs_embeds = inputs_embeds.masked_scatter(video_mask, video_embeds)
 
             if audio_values is not None:
-                audio_embeds = self.get_audio_features(audio_values, audio_grid_thw)
+                audio_embeds = self.get_audio_features(audio_values)
                 # print("audio embeds length: ", len(audio_embeds))
                 # print("audio embed shape: ", audio_embeds[0].shape)
                 audio_embeds = torch.cat(audio_embeds, dim=0)
