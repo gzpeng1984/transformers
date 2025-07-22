@@ -105,36 +105,35 @@ class Qwen2VLProcessor(ProcessorMixin):
         )
         super().__init__(image_processor, tokenizer, video_processor, chat_template=chat_template)
 
+
     def audio_processor(self, audios):
-        def compute_audio_token_length(audio_array, samplping_rate, compression_rate=2): # for turbo encoder
-            mel = fe(
-                audio_array.squeeze(),
-                sampling_rate=samplping_rate,
-                return_tensors="pt"
-            )   
-            return mel['input_features'].shape[-1] // compression_rate, mel['input_features']
-        
-        if audios is not None:
-            audio_inputs = []
-            audio_lengths = []
-            audio_input_ids = []
-            output = {}
-            for audio, sampling_rate in audios:
-                length, mel = compute_audio_token_length(audio, samplping_rate=sampling_rate)
-                audio_lengths.append(length)
-                # print(mel.shape)
-                audio_tensor = [self.audio_token_id] * length
-                audio_input_ids.append(audio_tensor)
-                audio_inputs.append(mel.squeeze())
+        # due to extract_vision_info, all audios in all batches are already in 1x(|A1|+|A2|+...) where |A1} is # of audios in sample 1 in the batch
+        def flatten_list(nested_list):
+            """Recursively flattens a nested list."""
+            flat_list = []
+            for item in nested_list:
+                if isinstance(item, list):  # If the item is a list, recurse
+                    flat_list.extend(flatten_list(item))
+                else:
+                    flat_list.append(item)
+            return flat_list
+        audio_values = []
+        audio_grid_thws = []
+        audio_lengths = []
+        if not isinstance(audios[0], np.ndarray):
+            audios = flatten_list(audios)
+        for audio in audios:
+            audio = audio.flatten()
+            audio_values.extend(audio)
+            #TODO: verify N_FRAMES
+            audio_grid_thws.append(np.array([fe.nb_max_frames//2,1,1])) # 1500 for whisper-turbo
+            audio_lengths.append(audio.shape[0])
+        audio_values = np.array(audio_values)
+        audio_grid_thws = np.array(audio_grid_thws)
+        audio_lengths = np.array(audio_lengths)
+        data = {"audio_values": audio_values, "audio_grid_thw": audio_grid_thws, "audio_lengths": audio_lengths}
 
-            # each element is now 2-D (128, 3000) fp16
-            output["audio_values"] = torch.stack(audio_inputs)
-            # Add to model input dictionary
-            # output["audio_input_ids"] = audio_input_ids
-            output["audio_grid_thw"] = np.array([[length, 1, 1] for length in audio_lengths])
-            return output
-        return None
-
+        return BatchFeature(data=data, tensor_type='pt')
 
     def __call__(
         self,
