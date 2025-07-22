@@ -90,8 +90,7 @@ class AudioEncoder(nn.Module):
             mel = mel.unsqueeze(0)
         x = self.encoder(input_features=mel).last_hidden_state
         x = self.proj(x)  
-        print("x shape:", x.shape)
-        return tuple(x)
+        return x
     
     @classmethod
     def _from_config(cls, audio_cfg):
@@ -1348,6 +1347,7 @@ class Qwen2VLModel(Qwen2VLPreTrainedModel):
         pixel_values: Optional[torch.Tensor] = None,
         pixel_values_videos: Optional[torch.FloatTensor] = None,
         audio_values: Optional[torch.FloatTensor] = None,
+        audio_lengths: Optional[torch.LongTensor] = None,
         image_grid_thw: Optional[torch.LongTensor] = None,
         video_grid_thw: Optional[torch.LongTensor] = None,
         audio_grid_thw: Optional[torch.LongTensor] = None,
@@ -1422,10 +1422,17 @@ class Qwen2VLModel(Qwen2VLPreTrainedModel):
                 inputs_embeds = inputs_embeds.masked_scatter(video_mask, video_embeds)
 
             if audio_values is not None:
+                audio_values = audio_values.type(self.audio_encoder.get_dtype())
+                for length in audio_lengths:
+                    encoding = self.audio_encoder(audio_values[st:st+length])
+                    encodings.append(encoding)
+                    st += length
+                audio_values = torch.cat(encodings, dim=1)
+
                 audio_embeds = self.get_audio_features(audio_values)
                 # print("audio embeds length: ", len(audio_embeds))
                 print("audio embed shape: ", audio_embeds[0].shape)
-                audio_embeds = torch.cat(audio_embeds, dim=0)
+                # audio_embeds = torch.cat(audio_embeds, dim=0)
                 # print("audio embeds: \n", audio_embeds[:, :8])
                 print("audio embeds shape: ", audio_embeds.shape)
 
@@ -1982,6 +1989,7 @@ class Qwen2VLExtendedForConditionalGeneration(Qwen2VLPreTrainedModel, Generation
         pixel_values=None,
         pixel_values_videos=None,
         audio_values=None,
+        audio_lengths=None,
         image_grid_thw=None,
         video_grid_thw=None,
         audio_grid_thw=None,
@@ -1999,6 +2007,7 @@ class Qwen2VLExtendedForConditionalGeneration(Qwen2VLPreTrainedModel, Generation
             pixel_values=pixel_values,
             pixel_values_videos=pixel_values_videos,
             audio_values=audio_values,
+            audio_lengths=audio_lengths,
             image_grid_thw=image_grid_thw,
             video_grid_thw=video_grid_thw,
             audio_grid_thw=audio_grid_thw,
