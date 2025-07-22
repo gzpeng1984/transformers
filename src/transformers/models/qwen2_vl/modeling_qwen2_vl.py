@@ -61,6 +61,7 @@ from transformers.models.whisper.modeling_whisper import WhisperEncoder
 
 fe = WhisperFeatureExtractor.from_pretrained("openai/whisper-base")
 
+from Whipser 
 from whisper import log_mel_spectrogram
 from whisper import pad_or_trim
 
@@ -90,6 +91,7 @@ class AudioEncoder(nn.Module):
             mel = mel.unsqueeze(0)
         x = self.encoder(input_features=mel).last_hidden_state
         x = self.proj(x)  
+        print("x shape:", x.shape)
         return tuple(x)
     
     @classmethod
