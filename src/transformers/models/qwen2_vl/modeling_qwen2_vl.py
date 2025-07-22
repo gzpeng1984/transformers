@@ -61,6 +61,9 @@ from transformers.models.whisper.modeling_whisper import WhisperEncoder
 
 fe = WhisperFeatureExtractor.from_pretrained("openai/whisper-base")
 
+from whisper import log_mel_spectrogram
+from whisper import pad_or_trim
+
 class AudioEncoder(nn.Module):
     def __init__(self, encoder_model:str,  project_dim: int):
         super().__init__()
@@ -77,12 +80,10 @@ class AudioEncoder(nn.Module):
     def get_device(self):
         return list(self.encoder.parameters())[0].device
     
+    
     def forward(self, audio):
-        mel = fe(
-            audio,
-            sampling_rate=16000,          # must be 16000
-            return_tensors="pt",
-        )
+        audio = pad_or_trim(audio)
+        mel = log_mel_spectrogram(audio, n_mels=128)
         mel = mel.to(dtype=self.get_dtype(), device=self.get_device()) 
         if mel.ndim == 2:
             # add a BS f 1
