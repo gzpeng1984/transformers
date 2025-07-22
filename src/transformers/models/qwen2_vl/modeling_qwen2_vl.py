@@ -1422,14 +1422,16 @@ class Qwen2VLModel(Qwen2VLPreTrainedModel):
                 inputs_embeds = inputs_embeds.masked_scatter(video_mask, video_embeds)
 
             if audio_values is not None:
+                st = 0
+                encodings =[]
                 audio_values = audio_values.type(self.audio_encoder.get_dtype())
                 for length in audio_lengths:
-                    encoding = self.audio_encoder(audio_values[st:st+length])
+                    encoding = self.get_audio_features(audio_values[st:st+length])
                     encodings.append(encoding)
                     st += length
                 audio_values = torch.cat(encodings, dim=1)
 
-                audio_embeds = self.get_audio_features(audio_values)
+                # audio_embeds = self.get_audio_features(audio_values)
                 # print("audio embeds length: ", len(audio_embeds))
                 print("audio embed shape: ", audio_embeds[0].shape)
                 # audio_embeds = torch.cat(audio_embeds, dim=0)
