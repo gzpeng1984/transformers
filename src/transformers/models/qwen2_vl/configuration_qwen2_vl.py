@@ -39,6 +39,8 @@ class Qwen2VLAudioConfig(PretrainedConfig):
         n_text_state=1280,
         n_text_head=20,
         n_text_layer=4,
+        embed_dim=1280,
+        hidden_size=3584,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -53,6 +55,8 @@ class Qwen2VLAudioConfig(PretrainedConfig):
         self.n_text_state = n_text_state
         self.n_text_head = n_text_head
         self.n_text_layer = n_text_layer
+        self.embed_dim = embed_dim
+        self.hidden_size = hidden_size
 
 
 class Qwen2VLVisionConfig(PretrainedConfig):
