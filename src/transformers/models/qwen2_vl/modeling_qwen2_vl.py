@@ -95,7 +95,7 @@ class AudioEncoder(nn.Module):
         self.model = Whisper(self.config)
         replace_layer_norm(self.model.encoder)
         del self.model.alignment_heads
-        self.proj = nn.Linear(config.embed_dim, config.hidden_size)
+        self.proj = nn.Linear(config.embed_dim, config.hidden_size, bias=False)
 
     def get_dtype(self):
         return list(self.model.parameters())[0].dtype
