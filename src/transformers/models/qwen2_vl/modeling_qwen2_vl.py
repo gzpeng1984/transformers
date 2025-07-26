@@ -1117,7 +1117,7 @@ class Qwen2VLModel(Qwen2VLPreTrainedModel):
     def __init__(self, config: Qwen2VLConfig):
         super().__init__(config)
         self.visual = Qwen2VisionTransformerPretrainedModel._from_config(config.vision_config)
-        self.audio = AudioEncoder._from_config(config.audio_config)
+        self.audio = AudioEncoder(config.audio_config)
         self.language_model = Qwen2VLTextModel._from_config(config.text_config)
         self.rope_deltas = None  # cache rope_deltas here
 
