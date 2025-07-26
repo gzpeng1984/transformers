@@ -28,6 +28,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint
 from torch.nn import LayerNorm
+import whisper
 
 from ...activations import ACT2FN
 from ...cache_utils import Cache, DynamicCache
@@ -55,52 +56,101 @@ if is_flash_attn_available():
 
 logger = logging.get_logger(__name__)
 
-
-from transformers import WhisperConfig, WhisperModel, WhisperFeatureExtractor
-from transformers.models.whisper.modeling_whisper import WhisperEncoder
-
-fe = WhisperFeatureExtractor.from_pretrained("openai/whisper-base")
-
 from whisper import log_mel_spectrogram
 from whisper import pad_or_trim
 
+
+from whisper import Whisper
+from whisper import ModelDimensions
+from whisper import log_mel_spectrogram
+from whisper import pad_or_trim
+import whisper
+
+def replace_layer_norm(module):
+    for name, child in module.named_children():
+        if isinstance(child, whisper.model.LayerNorm):
+            old_params = child.state_dict()
+            new_layer_norm = nn.LayerNorm(child.normalized_shape, eps=child.eps, elementwise_affine=child.elementwise_affine)
+            new_layer_norm.load_state_dict(old_params)
+            setattr(module, name, new_layer_norm)
+        else:
+            replace_layer_norm(child)
+
 class AudioEncoder(nn.Module):
-    def __init__(self, encoder_model:str,  project_dim: int):
+    def __init__(self, config):
+        # turbo has a stride of 2 and hidden dim of 1280
         super().__init__()
-        wcfg          = WhisperConfig.from_pretrained(encoder_model)
-        self.encoder  = WhisperModel(wcfg).encoder 
-        self.hid_dim  = wcfg.d_model              # 1280
-        self.stride   = 2      # 2
-        self.proj     = nn.Linear(self.hid_dim, project_dim)
-        self.spatial_merge_size = 1
+        self.config = ModelDimensions(
+                    n_mels=config.n_mels,
+                    n_audio_ctx=config.n_audio_ctx,
+                    n_audio_state=config.n_audio_state,
+                    n_audio_head=config.n_audio_head,
+                    n_audio_layer=config.n_audio_layer,
+                    n_vocab=config.n_vocab,
+                    n_text_ctx=config.n_text_ctx,
+                    n_text_state=config.n_text_state,
+                    n_text_head=config.n_text_head,
+                    n_text_layer=config.n_text_layer
+                )
+        self.model = Whisper(self.config)
+        replace_layer_norm(self.model.encoder)
+        del self.model.alignment_heads
+        self.proj = nn.Linear(config.embed_dim, config.hidden_size)
 
     def get_dtype(self):
-        return list(self.encoder.parameters())[0].dtype
-    
+        return list(self.model.parameters())[0].dtype
     def get_device(self):
-        return list(self.encoder.parameters())[0].device
-    
-    
+        return list(self.model.parameters())[0].device
     def forward(self, audio):
+        dtype = audio.dtype
         audio = pad_or_trim(audio)
-        mel = log_mel_spectrogram(audio, n_mels=128)
+        mel = log_mel_spectrogram(audio, n_mels=self.model.dims.n_mels)
         mel = mel.to(dtype=self.get_dtype(), device=self.get_device()) 
         if mel.ndim == 2:
             # add a BS f 1
             mel = mel.unsqueeze(0)
-        x = self.encoder(input_features=mel).last_hidden_state
-        x = self.proj(x)  
+        embedding = self.model.encoder(mel).to(dtype)
+        x = self.proj(embedding)
         return x
+
+# class AudioEncoder(nn.Module):
+#     def __init__(self, encoder_model:str,  project_dim: int):
+#         super().__init__()
+#         wcfg          = WhisperConfig.from_pretrained(encoder_model)
+#         self.encoder  = WhisperModel(wcfg).encoder 
+#         self.hid_dim  = wcfg.d_model              # 1280
+#         self.stride   = 2      # 2
+#         
+#         self.spatial_merge_size = 1
+#         whisper_model = whisper.load_model("turbo", device="cuda")
+
+#     def get_dtype(self):
+#         return list(self.encoder.parameters())[0].dtype
     
-    @classmethod
-    def _from_config(cls, audio_cfg):
-        """
-        `audio_cfg` is the Qwen2VLAudioConfig instance.
-        """
-        return cls(
-            encoder_model=audio_cfg.encoder_model,
-            project_dim=audio_cfg.project_dim,
-        )
+#     def get_device(self):
+#         return list(self.encoder.parameters())[0].device
+    
+    
+#     def forward(self, audio):
+#         audio = pad_or_trim(audio)
+#         mel = log_mel_spectrogram(audio, n_mels=128)
+#         mel = mel.to(dtype=self.get_dtype(), device=self.get_device()) 
+#         if mel.ndim == 2:
+#             # add a BS f 1
+#             mel = mel.unsqueeze(0)
+#         x = self.encoder(input_features=mel).last_hidden_state
+#         x = self.proj(x)  
+#         return x
+    
+#     @classmethod
+#     def _from_config(cls, audio_cfg):
+#         """
+#         `audio_cfg` is the Qwen2VLAudioConfig instance.
+#         """
+#         return cls(
+#             encoder_model=audio_cfg.encoder_model,
+#             project_dim=audio_cfg.project_dim,
+#         )
     
 @dataclass
 class Qwen2VLModelOutputWithPast(ModelOutput):

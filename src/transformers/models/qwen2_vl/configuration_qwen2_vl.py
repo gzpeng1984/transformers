@@ -29,17 +29,30 @@ class Qwen2VLAudioConfig(PretrainedConfig):
 
     def __init__(
         self,
-        encoder_model="openai/whisper-large-v3-turbo",
-        project_dim:  int = 3584,
-        load_pretrained_audio: bool = False,
+        n_mels=128,
+        n_audio_ctx=1500,
+        n_audio_state=1280,
+        n_audio_head=20,
+        n_audio_layer=32,
+        n_vocab=51866,
+        n_text_ctx=448,
+        n_text_state=1280,
+        n_text_head=20,
+        n_text_layer=4,
         **kwargs,
     ):
         super().__init__(**kwargs)
-        
-        self.encoder_model          = encoder_model
-        self.project_dim            = project_dim
-        self.load_pretrained_audio  = load_pretrained_audio
 
+        self.n_mels = n_mels
+        self.n_audio_ctx = n_audio_ctx
+        self.n_audio_state = n_audio_state
+        self.n_audio_head = n_audio_head
+        self.n_audio_layer = n_audio_layer
+        self.n_vocab = n_vocab
+        self.n_text_ctx = n_text_ctx
+        self.n_text_state = n_text_state
+        self.n_text_head = n_text_head
+        self.n_text_layer = n_text_layer
 
 
 class Qwen2VLVisionConfig(PretrainedConfig):
