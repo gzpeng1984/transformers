@@ -1480,9 +1480,9 @@ class Qwen2VLModel(Qwen2VLPreTrainedModel):
                     encodings.append(encoding)
                     st += length
                 audio_embeds = torch.cat(encodings, dim=1)
-                print("audio embed shape: ", audio_embeds.shape)
+                # print("audio embed shape: ", audio_embeds.shape)
                 audio_embeds = audio_embeds.squeeze()
-                print("audio embed shape: ", audio_embeds.shape)
+                # print("audio embed shape: ", audio_embeds.shape)
 
                 n_audio_tokens = (input_ids == self.config.audio_token_id).sum().item()
                 n_audio_features = audio_embeds.shape[0]
