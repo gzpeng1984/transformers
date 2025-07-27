@@ -344,7 +344,7 @@ class Qwen2VLConfig(PretrainedConfig):
         audio_config=None,
         image_token_id=151655,
         video_token_id=151656,
-        audio_token_id=151657,
+        audio_token_id=151658,
         **kwargs,
     ):
         if isinstance(vision_config, dict):
