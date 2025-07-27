@@ -208,8 +208,9 @@ class Qwen2VLProcessor(ProcessorMixin):
             for i in range(len(text)):
                 while self.audio_token in text[i]:
                     num_audio_tokens = audio_grid_thw[index].prod() // merge_length
-                    # print("audio_grid_thw: ", audio_grid_thw)
-                    # print("num_audio_tokens: ", num_audio_tokens)
+                    print("audio_grid_thw: ", audio_grid_thw)
+                    print("num_audio_tokens: ", num_audio_tokens)
+                    print("self.audio_token: ", self.audio_token)
                     text[i] = text[i].replace(self.audio_token, "<|placeholder|>" * num_audio_tokens, 1)
                     index += 1
                 text[i] = text[i].replace("<|placeholder|>", self.audio_token)
