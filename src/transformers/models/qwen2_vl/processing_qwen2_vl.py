@@ -32,9 +32,7 @@ from ...tokenization_utils_base import PreTokenizedInput, TextInput
 from ...utils import logging
 from ...video_utils import VideoInput
 from ...audio_utils import AudioInput
-from transformers import WhisperFeatureExtractor
-
-fe = WhisperFeatureExtractor.from_pretrained("openai/whisper-large-v3-turbo")
+import whisper
 
 logger = logging.get_logger(__name__)
 
@@ -126,7 +124,7 @@ class Qwen2VLProcessor(ProcessorMixin):
             audio = audio.flatten()
             audio_values.extend(audio)
             #TODO: verify N_FRAMES
-            audio_grid_thws.append(np.array([fe.nb_max_frames//2,1,1])) # 1500 for whisper-turbo
+            audio_grid_thws.append(np.array([whisper.audio.N_FRAMES//2,1,1])) # 1500 for whisper-turbo
             audio_lengths.append(audio.shape[0])
         audio_values = np.array(audio_values)
         audio_grid_thws = np.array(audio_grid_thws)
@@ -205,10 +203,11 @@ class Qwen2VLProcessor(ProcessorMixin):
         text = text.copy()  # below lines change text in-place
 
         if audios is not None:
+            merge_length = 1
             index = 0
             for i in range(len(text)):
                 while self.audio_token in text[i]:
-                    num_audio_tokens = audio_grid_thw[index].prod()
+                    num_audio_tokens = audio_grid_thw[index].prod() // merge_length
                     # print("audio_grid_thw: ", audio_grid_thw)
                     # print("num_audio_tokens: ", num_audio_tokens)
                     text[i] = text[i].replace(self.audio_token, "<|placeholder|>" * num_audio_tokens, 1)
